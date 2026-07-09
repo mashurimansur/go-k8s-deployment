@@ -10,25 +10,12 @@ permissions:
   packages: write
 
 jobs:
-  # 1. Run Reusable Go CI workflow
-  ci:
-    uses: mashurimansur/pipeline-template/.github/workflows/ci-go.yml@master
+  # Run the unified Go pipeline template
+  pipeline:
+    uses: mashurimansur/pipeline-template/.github/workflows/pipeline-go.yml@master
     with:
       go-version: '1.22'
-
-  # 2. Run Reusable Docker Build & Push workflow
-  build-and-push:
-    needs: ci
-    uses: mashurimansur/pipeline-template/.github/workflows/docker-build-push.yml@master
-    with:
       image-name: 'go-k8s-deployment'
-
-  # 3. Run Reusable Helm Deployment workflow
-  deploy:
-    needs: build-and-push
-    uses: mashurimansur/pipeline-template/.github/workflows/deploy-helm.yml@master
-    with:
       release-name: 'go-k8s-deployment'
       chart-path: './helm/go-k8s-deployment'
       namespace: 'dev'
-      image-tag: ${{ needs.build-and-push.outputs.image-tag }}
