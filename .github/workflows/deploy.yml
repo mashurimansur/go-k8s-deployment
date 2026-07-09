@@ -58,6 +58,7 @@ jobs:
   deploy:
     runs-on: [self-hosted, home-k8s]
     needs: build-and-push
+    environment: production
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
