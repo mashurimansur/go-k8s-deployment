@@ -19,3 +19,4 @@ jobs:
       release-name: 'go-k8s-deployment'
       chart-path: './helm/go-k8s-deployment'
       namespace: 'dev'
+    secrets: inherit
