@@ -21,6 +21,10 @@ type HelloResponse struct {
 	Message string `json:"message"`
 }
 
+type EnvResponse struct {
+	CustomMessage string `json:"custom_message"`
+}
+
 func rootHandler(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "Halo dari Go di Kubernetes! Version: %s\n", version)
 }
@@ -36,6 +40,15 @@ func helloHandler(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(HelloResponse{Name: "Huri", Message: "Testing deploy again"})
 }
 
+func envHandler(w http.ResponseWriter, r *http.Request) {
+	customMsg := os.Getenv("CUSTOM_MESSAGE")
+	if customMsg == "" {
+		customMsg = "Default message (CUSTOM_MESSAGE env is not set)"
+	}
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(EnvResponse{CustomMessage: customMsg})
+}
+
 func main() {
 	port := os.Getenv("PORT")
 	if port == "" {
@@ -46,6 +59,7 @@ func main() {
 	mux.HandleFunc("/", rootHandler)
 	mux.HandleFunc("/healthz", healthHandler)
 	mux.HandleFunc("/hello", helloHandler)
+	mux.HandleFunc("/env", envHandler)
 
 	addr := ":" + port
 	log.Printf("server jalan di %s (version=%s)", addr, version)

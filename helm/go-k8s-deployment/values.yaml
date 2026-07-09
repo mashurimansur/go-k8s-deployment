@@ -26,3 +26,6 @@ probes:
   path: /healthz
   initialDelaySeconds: 3
   periodSeconds: 10
+
+env:
+  CUSTOM_MESSAGE: "Halo dari Environment Variable di Kubernetes!"
