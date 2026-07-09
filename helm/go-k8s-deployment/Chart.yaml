@@ -1,0 +1,6 @@
+apiVersion: v2
+name: go-k8s-deployment
+description: Simple Go app deployed via CI/CD ke home K8s cluster
+type: application
+version: 0.1.0
+appVersion: "0.1.0"

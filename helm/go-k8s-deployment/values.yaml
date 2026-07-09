@@ -1,0 +1,28 @@
+replicaCount: 2
+
+image:
+  repository: ghcr.io/mashurimansur/go-k8s-deployment
+  tag: latest
+  pullPolicy: IfNotPresent
+
+# Diperlukan karena package di ghcr.io defaultnya private
+imagePullSecrets:
+  - name: ghcr-secret
+
+service:
+  type: ClusterIP
+  port: 80
+  targetPort: 8080
+
+resources:
+  requests:
+    cpu: 50m
+    memory: 32Mi
+  limits:
+    cpu: 200m
+    memory: 128Mi
+
+probes:
+  path: /healthz
+  initialDelaySeconds: 3
+  periodSeconds: 10

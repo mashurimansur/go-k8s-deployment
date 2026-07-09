@@ -33,4 +33,4 @@ go.work.sum
 *.sw?
 
 # Project specific binary
-go-k8s-deployment
+/go-k8s-deployment
