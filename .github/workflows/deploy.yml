@@ -10,9 +10,9 @@ permissions:
   packages: write
 
 jobs:
-  # Run the unified Go pipeline template
+  # Run the unified DevSecOps Go pipeline template
   pipeline:
-    uses: mashurimansur/pipeline-template/.github/workflows/pipeline-go.yml@master
+    uses: mashurimansur/pipeline-template/.github/workflows/pipeline-devsecops-go.yml@master
     with:
       go-version: '1.22'
       image-name: 'go-k8s-deployment'
