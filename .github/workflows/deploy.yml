@@ -65,6 +65,6 @@ jobs:
       - name: Deploy to K8s via Helm
         run: |
           helm upgrade --install go-k8s-deployment ./helm/go-k8s-deployment \
-            --namespace go-k8s-deployment \
+            --namespace dev \
             --create-namespace \
             --set image.tag=${{ github.sha }}
