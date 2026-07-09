@@ -10,7 +10,7 @@ permissions:
   packages: write
 
 jobs:
-  # Run the centralized DevSecOps Go pipeline template
+  # Run the centralized DevSecOps Go pipeline template (fixed secrets context)
   pipeline:
     uses: mashurimansur/pipeline-template/.github/workflows/pipeline-devsecops-go.yml@master
     with:
