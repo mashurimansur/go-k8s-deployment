@@ -16,6 +16,11 @@ type HealthResponse struct {
 	Version string `json:"version"`
 }
 
+type HelloResponse struct {
+	Name    string `json:"name:`
+	Message string `json:"message"`
+}
+
 func rootHandler(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "Halo dari Go di Kubernetes! Version: %s\n", version)
 }
@@ -24,6 +29,11 @@ func rootHandler(w http.ResponseWriter, r *http.Request) {
 func healthHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(HealthResponse{Status: "ok", Version: version})
+}
+
+func helloHandler(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(HelloResponse{Name: "Huri", Message: "Testing deploy again"})
 }
 
 func main() {
@@ -35,6 +45,7 @@ func main() {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/", rootHandler)
 	mux.HandleFunc("/healthz", healthHandler)
+	mux.HandleFunc("/hello", helloHandler)
 
 	addr := ":" + port
 	log.Printf("server jalan di %s (version=%s)", addr, version)
