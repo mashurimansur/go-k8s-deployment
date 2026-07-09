@@ -29,3 +29,7 @@ probes:
 
 env:
   CUSTOM_MESSAGE: "Halo dari Environment Variable di Kubernetes! (Update Baru untuk Trigger Pipeline)"
+
+database:
+  enabled: true
+  secretName: postgres-creds

@@ -1,11 +1,15 @@
 package main
 
 import (
+	"database/sql"
 	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
 	"os"
+	"time"
+
+	_ "github.com/lib/pq"
 )
 
 // version di-inject saat build via ldflags, dari CI (git commit sha)
@@ -23,6 +27,11 @@ type HelloResponse struct {
 
 type EnvResponse struct {
 	CustomMessage string `json:"custom_message"`
+}
+
+type DbPingResponse struct {
+	Status  string `json:"status"`
+	Message string `json:"message"`
 }
 
 func rootHandler(w http.ResponseWriter, r *http.Request) {
@@ -49,6 +58,70 @@ func envHandler(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(EnvResponse{CustomMessage: customMsg})
 }
 
+func dbPingHandler(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
+	host := os.Getenv("DB_HOST")
+	port := os.Getenv("DB_PORT")
+	user := os.Getenv("DB_USER")
+	password := os.Getenv("DB_PASSWORD")
+	dbname := os.Getenv("DB_NAME")
+
+	if host == "" || port == "" || user == "" || password == "" || dbname == "" {
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(DbPingResponse{
+			Status:  "error",
+			Message: "Database credentials are not fully configured in environment variables",
+		})
+		return
+	}
+
+	// connection string
+	connStr := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=disable connect_timeout=5",
+		host, port, user, password, dbname)
+
+	db, err := sql.Open("postgres", connStr)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(DbPingResponse{
+			Status:  "error",
+			Message: fmt.Sprintf("Failed to open connection: %v", err),
+		})
+		return
+	}
+	defer db.Close()
+
+	// Set timeout for Ping
+	errChan := make(chan error, 1)
+	go func() {
+		errChan <- db.Ping()
+	}()
+
+	select {
+	case err := <-errChan:
+		if err != nil {
+			w.WriteHeader(http.StatusServiceUnavailable)
+			json.NewEncoder(w).Encode(DbPingResponse{
+				Status:  "error",
+				Message: fmt.Sprintf("Failed to ping database: %v", err),
+			})
+			return
+		}
+	case <-time.After(5 * time.Second):
+		w.WriteHeader(http.StatusGatewayTimeout)
+		json.NewEncoder(w).Encode(DbPingResponse{
+			Status:  "error",
+			Message: "Database ping timed out (5s)",
+		})
+		return
+	}
+
+	json.NewEncoder(w).Encode(DbPingResponse{
+		Status:  "success",
+		Message: "Successfully connected and pinged PostgreSQL database!",
+	})
+}
+
 func main() {
 	port := os.Getenv("PORT")
 	if port == "" {
@@ -60,6 +133,7 @@ func main() {
 	mux.HandleFunc("/healthz", healthHandler)
 	mux.HandleFunc("/hello", helloHandler)
 	mux.HandleFunc("/env", envHandler)
+	mux.HandleFunc("/db-ping", dbPingHandler)
 
 	addr := ":" + port
 	log.Printf("server jalan di %s (version=%s)", addr, version)
