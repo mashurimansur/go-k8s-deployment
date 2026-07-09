@@ -61,17 +61,17 @@ func envHandler(w http.ResponseWriter, r *http.Request) {
 func dbPingHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
-	host := os.Getenv("DB_HOST")
-	port := os.Getenv("DB_PORT")
-	user := os.Getenv("DB_USER")
-	password := os.Getenv("DB_PASSWORD")
-	dbname := os.Getenv("DB_NAME")
+	host := os.Getenv("PG_HOST")
+	port := os.Getenv("PG_PORT")
+	user := os.Getenv("PG_USERNAME")
+	password := os.Getenv("PG_PASSWORD")
+	dbname := os.Getenv("PG_DATABASE")
 
 	if host == "" || port == "" || user == "" || password == "" || dbname == "" {
 		w.WriteHeader(http.StatusInternalServerError)
 		json.NewEncoder(w).Encode(DbPingResponse{
 			Status:  "error",
-			Message: "Database credentials are not fully configured in environment variables",
+			Message: "Database credentials are not fully configured in environment variables (PG_HOST, PG_PORT, etc.)",
 		})
 		return
 	}
