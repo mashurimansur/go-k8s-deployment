@@ -122,6 +122,15 @@ func dbPingHandler(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+func loggingMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		start := time.Now()
+		log.Printf("Started %s %s from %s", r.Method, r.URL.Path, r.RemoteAddr)
+		next.ServeHTTP(w, r)
+		log.Printf("Completed %s %s in %v", r.Method, r.URL.Path, time.Since(start))
+	})
+}
+
 func main() {
 	port := os.Getenv("PORT")
 	if port == "" {
@@ -137,7 +146,11 @@ func main() {
 
 	addr := ":" + port
 	log.Printf("server jalan di %s (version=%s)", addr, version)
-	if err := http.ListenAndServe(addr, mux); err != nil {
+	
+	// Wrap mux dengan loggingMiddleware
+	loggedHandler := loggingMiddleware(mux)
+
+	if err := http.ListenAndServe(addr, loggedHandler); err != nil {
 		log.Fatal(err)
 	}
 }
