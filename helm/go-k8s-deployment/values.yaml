@@ -28,4 +28,4 @@ probes:
   periodSeconds: 10
 
 env:
-  CUSTOM_MESSAGE: "Halo dari Environment Variable di Kubernetes!"
+  CUSTOM_MESSAGE: "Halo dari Environment Variable di Kubernetes! (Update Baru untuk Trigger Pipeline)"
