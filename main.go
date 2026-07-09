@@ -17,7 +17,7 @@ type HealthResponse struct {
 }
 
 type HelloResponse struct {
-	Name    string `json:"name:`
+	Name    string `json:"name"`
 	Message string `json:"message"`
 }
 
