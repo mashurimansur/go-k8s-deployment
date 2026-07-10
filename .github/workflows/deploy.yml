@@ -10,7 +10,7 @@ permissions:
   packages: write
 
 jobs:
-  # Run the centralized DevSecOps Go pipeline template (grouped hadolint)
+  # Run the centralized DevSecOps Go pipeline template (updated node version actions)
   pipeline:
     uses: mashurimansur/pipeline-template/.github/workflows/pipeline-devsecops-go.yml@master
     with:
