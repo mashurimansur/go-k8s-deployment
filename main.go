@@ -122,6 +122,25 @@ func dbPingHandler(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+type TriggerResponse struct {
+	Status  string `json:"status"`
+	Message string `json:"message"`
+}
+
+func triggerPipelineHandler(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	
+	ref := r.URL.Query().Get("ref")
+	if ref == "" {
+		ref = "master"
+	}
+
+	json.NewEncoder(w).Encode(TriggerResponse{
+		Status:  "success",
+		Message: fmt.Sprintf("Pipeline triggered successfully for ref: %s (simulation)", ref),
+	})
+}
+
 func loggingMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()
@@ -143,6 +162,7 @@ func main() {
 	mux.HandleFunc("/hello", helloHandler)
 	mux.HandleFunc("/env", envHandler)
 	mux.HandleFunc("/db-ping", dbPingHandler)
+	mux.HandleFunc("/trigger-pipeline", triggerPipelineHandler)
 
 	addr := ":" + port
 	log.Printf("server jalan di %s (version=%s)", addr, version)
