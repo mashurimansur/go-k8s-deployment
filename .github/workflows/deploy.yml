@@ -4,6 +4,20 @@ on:
   push:
     branches:
       - master
+  workflow_dispatch:
+    inputs:
+      deploy-dev:
+        description: 'Deploy to Development?'
+        type: boolean
+        default: true
+      deploy-preprod:
+        description: 'Deploy to Preproduction?'
+        type: boolean
+        default: false
+      deploy-prod:
+        description: 'Deploy to Production?'
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -21,4 +35,7 @@ jobs:
       dev-namespace: 'dev'
       preprod-namespace: 'preprod'
       prod-namespace: 'production'
+      deploy-dev: ${{ github.event_name == 'push' || inputs.deploy-dev == true }}
+      deploy-preprod: ${{ github.event_name != 'push' && inputs.deploy-preprod == true }}
+      deploy-prod: ${{ github.event_name != 'push' && inputs.deploy-prod == true }}
     secrets: inherit
