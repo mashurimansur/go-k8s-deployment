@@ -14,7 +14,7 @@ jobs:
   pipeline:
     uses: mashurimansur/pipeline-template/.github/workflows/pipeline-devsecops-go.yml@master
     with:
-      go-version: '1.23'
+      go-version: '1.25.12'
       image-name: 'go-k8s-deployment'
       release-name: 'go-k8s-deployment'
       chart-path: './helm/go-k8s-deployment'
