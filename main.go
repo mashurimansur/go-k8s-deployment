@@ -34,19 +34,34 @@ type DbPingResponse struct {
 	Message string `json:"message"`
 }
 
+type TriggerResponse struct {
+	Status  string `json:"status"`
+	Message string `json:"message"`
+}
+
+// writeJSON menulis response JSON dengan status code tertentu dan
+// me-log error jika encoding/penulisan gagal.
+func writeJSON(w http.ResponseWriter, status int, v interface{}) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(status)
+	if err := json.NewEncoder(w).Encode(v); err != nil {
+		log.Printf("failed to encode JSON response: %v", err)
+	}
+}
+
 func rootHandler(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintf(w, "Halo dari Go di Kubernetes! Version: %s\n", version)
+	if _, err := fmt.Fprintf(w, "Halo dari Go di Kubernetes! Version: %s\n", version); err != nil {
+		log.Printf("failed to write response: %v", err)
+	}
 }
 
 // healthHandler dipakai oleh K8s liveness & readiness probe
 func healthHandler(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(HealthResponse{Status: "ok", Version: version})
+	writeJSON(w, http.StatusOK, HealthResponse{Status: "ok", Version: version})
 }
 
 func helloHandler(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(HelloResponse{Name: "Huri", Message: "Testing deploy again"})
+	writeJSON(w, http.StatusOK, HelloResponse{Name: "Huri", Message: "Testing deploy again"})
 }
 
 func envHandler(w http.ResponseWriter, r *http.Request) {
@@ -54,13 +69,10 @@ func envHandler(w http.ResponseWriter, r *http.Request) {
 	if customMsg == "" {
 		customMsg = "Default message (CUSTOM_MESSAGE env is not set)"
 	}
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(EnvResponse{CustomMessage: customMsg})
+	writeJSON(w, http.StatusOK, EnvResponse{CustomMessage: customMsg})
 }
 
 func dbPingHandler(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-
 	host := os.Getenv("PG_HOST")
 	port := os.Getenv("PG_PORT")
 	user := os.Getenv("PG_USERNAME")
@@ -68,8 +80,7 @@ func dbPingHandler(w http.ResponseWriter, r *http.Request) {
 	dbname := os.Getenv("PG_DATABASE")
 
 	if host == "" || port == "" || user == "" || password == "" || dbname == "" {
-		w.WriteHeader(http.StatusInternalServerError)
-		json.NewEncoder(w).Encode(DbPingResponse{
+		writeJSON(w, http.StatusInternalServerError, DbPingResponse{
 			Status:  "error",
 			Message: "Database credentials are not fully configured in environment variables (PG_HOST, PG_PORT, etc.)",
 		})
@@ -82,14 +93,17 @@ func dbPingHandler(w http.ResponseWriter, r *http.Request) {
 
 	db, err := sql.Open("postgres", connStr)
 	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		json.NewEncoder(w).Encode(DbPingResponse{
+		writeJSON(w, http.StatusInternalServerError, DbPingResponse{
 			Status:  "error",
 			Message: fmt.Sprintf("Failed to open connection: %v", err),
 		})
 		return
 	}
-	defer db.Close()
+	defer func() {
+		if err := db.Close(); err != nil {
+			log.Printf("failed to close db connection: %v", err)
+		}
+	}()
 
 	// Set timeout for Ping
 	errChan := make(chan error, 1)
@@ -100,42 +114,33 @@ func dbPingHandler(w http.ResponseWriter, r *http.Request) {
 	select {
 	case err := <-errChan:
 		if err != nil {
-			w.WriteHeader(http.StatusServiceUnavailable)
-			json.NewEncoder(w).Encode(DbPingResponse{
+			writeJSON(w, http.StatusServiceUnavailable, DbPingResponse{
 				Status:  "error",
 				Message: fmt.Sprintf("Failed to ping database: %v", err),
 			})
 			return
 		}
 	case <-time.After(5 * time.Second):
-		w.WriteHeader(http.StatusGatewayTimeout)
-		json.NewEncoder(w).Encode(DbPingResponse{
+		writeJSON(w, http.StatusGatewayTimeout, DbPingResponse{
 			Status:  "error",
 			Message: "Database ping timed out (5s)",
 		})
 		return
 	}
 
-	json.NewEncoder(w).Encode(DbPingResponse{
+	writeJSON(w, http.StatusOK, DbPingResponse{
 		Status:  "success",
 		Message: "Successfully connected and pinged PostgreSQL database!",
 	})
 }
 
-type TriggerResponse struct {
-	Status  string `json:"status"`
-	Message string `json:"message"`
-}
-
 func triggerPipelineHandler(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-	
 	ref := r.URL.Query().Get("ref")
 	if ref == "" {
 		ref = "master"
 	}
 
-	json.NewEncoder(w).Encode(TriggerResponse{
+	writeJSON(w, http.StatusOK, TriggerResponse{
 		Status:  "success",
 		Message: fmt.Sprintf("Pipeline triggered successfully for ref: %s (simulation)", ref),
 	})
@@ -166,7 +171,7 @@ func main() {
 
 	addr := ":" + port
 	log.Printf("server jalan di %s (version=%s)", addr, version)
-	
+
 	// Wrap mux dengan loggingMiddleware
 	loggedHandler := loggingMiddleware(mux)
 
